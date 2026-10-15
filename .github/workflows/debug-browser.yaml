@@ -1,0 +1,44 @@
+name: Diagnose Intel Mac browser tests
+
+on:
+  push:
+    branches: ['debug/macos-wasm-20261015']
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: reki2000/mp_bigfile_picker
+          ref: 97b367f3add6bd2f326d7ad5e53c8a3506f12d0f
+          persist-credentials: false
+      - uses: $/setup-flutter
+      - name: Prepare the SDK and browser
+        run: |
+          node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
+          bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
+          "$CHROME_EXECUTABLE" --version
+      - run: flutter pub get
+      - name: Bound and trace each Wasm test invocation
+        run: |
+          set +e
+          node - <<'JS' > "$RUNNER_TEMP/browser-debug.log" 2>&1
+          const {spawnSync} = require('node:child_process');
+          for (const [cwd, files] of [['.', ['test/web_access_test.dart']], ['example', []]]) {
+            console.log('START', cwd);
+            const run = spawnSync('flutter', ['test', '--platform', 'chrome', '--wasm', '--verbose', ...files],
+              {cwd, timeout: 240000, killSignal: 'SIGKILL', stdio: 'inherit'});
+            console.log('FINISH', cwd, run.status, run.error?.message);
+          }
+          JS
+          debug_status=$?
+          tail -n 200 "$RUNNER_TEMP/browser-debug.log"
+          exit "$debug_status"
