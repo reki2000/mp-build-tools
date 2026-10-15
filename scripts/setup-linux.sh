@@ -11,5 +11,6 @@ if [[ "$RUNNER_ARCH" == ARM64 ]]; then
     git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$sdk"
   fi
   echo "$sdk/bin" >> "$GITHUB_PATH"
+  echo "FLUTTER_ROOT=$sdk" >> "$GITHUB_ENV"
   "$sdk/bin/flutter" --version
 fi
