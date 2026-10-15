@@ -78,6 +78,10 @@ jobs:
           test "$VERSION" = "1.2.3-rc.1" && test "$BUILD_NAME" = "1.2.3-rc.1" && test "$ARCH" = browser
           test -f "$MP_BUILD_SCRIPTS/build.sh"
           test "$ANDROID_SIGNING" = false && test "$IOS_SIGNING" = false
+      - name: Check the preinstalled Chrome path
+        if: runner.os != 'Linux' || runner.arch != 'ARM64'
+        shell: bash
+        run: bash scripts/setup-browser.sh
       - name: Check the native PowerShell path and syntax
         if: runner.os == 'Windows'
         shell: pwsh

@@ -71,19 +71,20 @@ jobs:
         run: bash .github/scripts/test.sh vm
       - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         id: chrome
-        if: needs.plan.outputs.web == 'true'
+        if: needs.plan.outputs.web == 'true' && runner.os == 'Linux' && runner.arch == 'ARM64'
         with:
-          chrome-version: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'latest' || 'stable' }}
+          chrome-version: stable
           install-dependencies: true
-      - name: Browser tests (JavaScript)
+      - name: Configure Chrome for the test host
         if: needs.plan.outputs.web == 'true'
         env:
-          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+          BROWSER_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
+      - name: Browser tests (JavaScript)
+        if: needs.plan.outputs.web == 'true'
         run: bash .github/scripts/test.sh js
       - name: Browser tests (WebAssembly)
         if: needs.plan.outputs.web == 'true'
-        env:
-          CHROME_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
         run: bash .github/scripts/test.sh wasm
 
   build:
