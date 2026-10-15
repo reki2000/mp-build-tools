@@ -1,0 +1,42 @@
+name: Select build and test environments
+description: Resolve the shared platform catalog and release artifact manifest.
+inputs:
+  include:
+    description: JSON array of platform IDs to build; empty selects all.
+    default: '[]'
+  exclude:
+    description: JSON array of platform IDs to omit; mutually exclusive with include.
+    default: '[]'
+outputs:
+  builds:
+    description: Build matrix entries for this event.
+    value: ${{ steps.plan.outputs.builds }}
+  tests:
+    description: Distinct host environments for the selected platforms.
+    value: ${{ steps.plan.outputs.tests }}
+  web:
+    description: Whether Web was selected.
+    value: ${{ steps.plan.outputs.web }}
+  full:
+    description: Whether this event builds every selected platform.
+    value: ${{ steps.plan.outputs.full }}
+  manifest:
+    description: Expected artifacts and tested hosts for this commit.
+    value: ${{ steps.plan.outputs.manifest }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+      id: plan
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        INCLUDE: ${{ inputs.include }}
+        EXCLUDE: ${{ inputs.exclude }}
+      with:
+        script: |
+          const full = context.ref === 'refs/heads/main' || context.eventName === 'workflow_dispatch' ||
+            (context.payload.pull_request?.labels || []).some(label => label.name === 'ci:full');
+          const result = require(`${process.env.ACTION_PATH}/../scripts/plan.cjs`).plan({
+            include: process.env.INCLUDE, exclude: process.env.EXCLUDE, full, commit: context.sha,
+          });
+          for (const [key, value] of Object.entries({...result, full})) core.setOutput(key, value);

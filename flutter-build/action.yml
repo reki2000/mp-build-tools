@@ -15,7 +15,7 @@ inputs:
     required: true
   flutter-version:
     description: "Pinned Flutter SDK version."
-    default: "3.47.5"
+    default: ""
   retention-days:
     description: "Days to retain the uploaded CI artifact."
     default: "90"
@@ -56,6 +56,9 @@ outputs:
 runs:
   using: composite
   steps:
+    - uses: $/setup-flutter
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
     - name: Configure the application build
       id: configure
       shell: bash
@@ -65,7 +68,6 @@ runs:
         ARCH: ${{ inputs.architecture }}
         APP_DIR: ${{ inputs.app-directory }}
         ARTIFACT_NAME: ${{ inputs.artifact-name }}
-        FLUTTER_VERSION: ${{ inputs.flutter-version }}
       run: bash "${ACTION_PATH//\\//}/../scripts/configure-build.sh"
     - uses: actions/setup-java@v4
       if: inputs.target == 'android'
@@ -74,26 +76,6 @@ runs:
         java-version: '17'
         cache: gradle
         cache-dependency-path: '${{ env.APP_DIR }}/android/**/*.gradle*'
-    - uses: actions/cache@v4
-      if: inputs.target == 'linux' && inputs.architecture == 'arm64'
-      with:
-        path: ${{ runner.temp }}/flutter-arm64
-        key: flutter-linux-arm64-${{ env.FLUTTER_VERSION }}
-    - name: Set up Linux dependencies and ARM64 Flutter
-      if: inputs.target == 'linux'
-      shell: bash
-      run: bash "$MP_BUILD_SCRIPTS/setup-linux.sh"
-    - uses: subosito/flutter-action@v2
-      if: inputs.target != 'linux' || inputs.architecture != 'arm64'
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        architecture: ${{ runner.os == 'Windows' && 'x64' || (runner.arch == 'ARM64' && 'arm64' || 'x64') }}
-        cache: true
-        cache-key: 'flutter-:os:-${{ runner.arch }}-:channel:-:version:-:arch:'
-    - name: Bootstrap native Dart on Windows ARM64
-      if: inputs.target == 'windows' && inputs.architecture == 'arm64'
-      shell: pwsh
-      run: '& "$env:MP_BUILD_SCRIPTS/windows.ps1" bootstrap'
     - name: Configure release signing
       if: github.event_name != 'pull_request' && (inputs.target == 'android' || inputs.target == 'ios')
       shell: bash

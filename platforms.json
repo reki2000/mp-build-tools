@@ -1,0 +1,21 @@
+{
+  "hosts": {
+    "linux-x64": "ubuntu-22.04",
+    "linux-arm64": "ubuntu-22.04-arm",
+    "windows-x64": "windows-2022",
+    "windows-arm64": "windows-11-arm",
+    "macos-arm64": "macos-15",
+    "macos-x64": "macos-15-intel"
+  },
+  "builds": {
+    "android": {"target": "android", "arch": "all", "host": "linux-x64"},
+    "linux-x64": {"target": "linux", "arch": "x64", "host": "linux-x64"},
+    "linux-arm64": {"target": "linux", "arch": "arm64", "host": "linux-arm64"},
+    "windows-x64": {"target": "windows", "arch": "x64", "host": "windows-x64"},
+    "windows-arm64": {"target": "windows", "arch": "arm64", "host": "windows-arm64"},
+    "macos": {"target": "macos", "arch": "universal", "host": "macos-arm64", "test-hosts": ["macos-arm64", "macos-x64"]},
+    "ios": {"target": "ios", "arch": "arm64", "host": "macos-arm64"},
+    "ios-simulator": {"target": "ios-simulator", "arch": "arm64", "host": "macos-arm64"},
+    "web": {"target": "web", "arch": "browser", "host": "linux-x64"}
+  }
+}

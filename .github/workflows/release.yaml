@@ -1,0 +1,33 @@
+name: Release verified Flutter binaries
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+      build-run-id:
+        type: string
+        default: ''
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - uses: $/release-binaries
+        with:
+          tag: ${{ inputs.tag }}
+          artifact-name: ${{ inputs.artifact-name }}
+          build-run-id: ${{ inputs.build-run-id }}

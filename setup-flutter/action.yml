@@ -1,0 +1,44 @@
+name: Set up Flutter for the runner
+description: Install a pinned SDK, native Linux dependencies and ARM64 workarounds.
+inputs:
+  flutter-version:
+    description: Pinned Flutter SDK version.
+    default: ''
+outputs:
+  version:
+    description: Installed Flutter SDK version.
+    value: ${{ steps.configure.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      id: configure
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        FLUTTER_VERSION: ${{ inputs.flutter-version }}
+      run: |
+        scripts=$(cd "${ACTION_PATH//\\//}/../scripts" && pwd)
+        if [[ "$RUNNER_OS" == Windows ]]; then scripts=$(cygpath -m "$scripts"); fi
+        if [[ -z "$FLUTTER_VERSION" ]]; then FLUTTER_VERSION=$(cat "$scripts/../.flutter-version"); fi
+        echo "version=$FLUTTER_VERSION" >> "$GITHUB_OUTPUT"
+        printf '%s\n' "MP_BUILD_SCRIPTS=$scripts" "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
+    - uses: actions/cache@v4
+      if: runner.os == 'Linux' && runner.arch == 'ARM64'
+      with:
+        path: ${{ runner.temp }}/flutter-arm64
+        key: flutter-linux-arm64-${{ steps.configure.outputs.version }}
+    - name: Set up Linux dependencies and ARM64 Flutter
+      if: runner.os == 'Linux'
+      shell: bash
+      run: bash "$MP_BUILD_SCRIPTS/setup-linux.sh"
+    - uses: subosito/flutter-action@v2
+      if: runner.os != 'Linux' || runner.arch != 'ARM64'
+      with:
+        flutter-version: ${{ steps.configure.outputs.version }}
+        architecture: ${{ runner.os == 'Windows' && 'x64' || (runner.arch == 'ARM64' && 'arm64' || 'x64') }}
+        cache: true
+        cache-key: 'flutter-:os:-${{ runner.arch }}-:channel:-:version:-:arch:'
+    - name: Bootstrap native Dart on Windows ARM64
+      if: runner.os == 'Windows' && runner.arch == 'ARM64'
+      shell: pwsh
+      run: '& "$env:MP_BUILD_SCRIPTS/windows.ps1" bootstrap'

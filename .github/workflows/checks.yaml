@@ -23,26 +23,37 @@ jobs:
       - name: Check workflow expressions
         run: |
           curl --fail --silent --show-error --location https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz | tar --no-same-owner -xz -C "$RUNNER_TEMP" actionlint
-          "$RUNNER_TEMP/actionlint" .github/workflows/*.yaml
-      - name: Check script syntax and release-source policy
-        run: |
-          for script in scripts/*.sh; do bash -n "$script"; done
-          node --check scripts/verify-release.cjs
-          node --test test/release.test.cjs
+          # actionlint 1.7.12 predates GitHub's self repository references.
+          "$RUNNER_TEMP/actionlint" -ignore 'specifying action "\$/[^"]+" in invalid format because ref is missing' .github/workflows/*.yaml
+
+  plan:
+    runs-on: ubuntu-22.04
+    outputs:
+      hosts: ${{ steps.plan.outputs.tests }}
+    steps:
+      - uses: $/build-plan
+        id: plan
 
   version:
-    runs-on: ${{ matrix.os }}
+    needs: plan
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-15, windows-2022]
+        include: ${{ fromJSON(needs.plan.outputs.hosts) }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check script syntax and release-source policy
+        shell: bash
+        run: |
+          for script in scripts/*.sh; do bash -n "$script"; done
+          for script in scripts/*.cjs; do node --check "$script"; done
+          node --test test/*.test.cjs
       - shell: bash
         run: |
           echo 'version: "1.2.3-rc.1+42"' > pubspec.yaml
       - id: version
-        uses: ./read-version
+        uses: $/read-version
       - name: Check composite outputs
         shell: bash
         env:

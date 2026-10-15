@@ -1,4 +1,6 @@
-const {writeFileSync} = require('node:fs');
+const {existsSync, readFileSync, writeFileSync} = require('node:fs');
+const {join} = require('node:path');
+const {select, artifactNames} = require('./plan.cjs');
 
 module.exports = async ({github, context, core}) => {
   const found = JSON.parse(process.env.FOUND_ARTIFACTS);
@@ -17,11 +19,24 @@ module.exports = async ({github, context, core}) => {
 
   const artifacts = (await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: runId}))
     .filter(a => a.name.startsWith('release-'));
-  const expected = [
-    'release-android-all', 'release-linux-x64', 'release-linux-arm64',
-    'release-windows-x64', 'release-windows-arm64', 'release-macos-universal',
-    'release-ios-arm64', 'release-ios-simulator-arm64', 'release-web-browser',
-  ];
+  const manifestDir = process.env.MANIFEST_DIR;
+  const manifestPath = join(manifestDir, 'full-build-success.json');
+  let manifest;
+  let expected;
+  if (existsSync(manifestPath)) {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    if (manifest.schema !== 1 || manifest.commit !== run.head_sha || !manifest.platforms?.length) {
+      throw new Error('Invalid build manifest or commit');
+    }
+    expected = artifactNames(select(JSON.stringify(manifest.platforms)));
+    if (JSON.stringify(expected) !== JSON.stringify(manifest.artifacts)) throw new Error('Inconsistent build manifest');
+  } else {
+    // Legacy builds always required the complete default platform set.
+    if (readFileSync(join(manifestDir, 'full-build-success.txt'), 'utf8').trim() !== run.head_sha) {
+      throw new Error('Invalid legacy build marker');
+    }
+    expected = artifactNames(select());
+  }
   if (artifacts.length !== expected.length || artifacts.some(a => a.expired) || artifacts.map(a => a.name).sort().join() !== expected.sort().join()) {
     throw new Error('Incomplete or expired CI binaries');
   }
@@ -32,6 +47,7 @@ module.exports = async ({github, context, core}) => {
     tag: process.env.RELEASE_TAG,
     commit: run.head_sha,
     ci_run: run.html_url,
+    ...(manifest && {build: manifest}),
     artifacts,
   }, null, 2) + '\n');
 };
