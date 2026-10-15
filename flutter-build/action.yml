@@ -66,8 +66,6 @@ runs:
         APP_DIR: ${{ inputs.app-directory }}
         ARTIFACT_NAME: ${{ inputs.artifact-name }}
         FLUTTER_VERSION: ${{ inputs.flutter-version }}
-        ANDROID_SIGNING: ${{ github.event_name != 'pull_request' && inputs.android-keystore-base64 != '' }}
-        IOS_SIGNING: ${{ github.event_name != 'pull_request' && inputs.ios-certificate-base64 != '' }}
       run: bash "${ACTION_PATH//\\//}/../scripts/configure-build.sh"
     - uses: actions/setup-java@v4
       if: inputs.target == 'android'
@@ -96,15 +94,17 @@ runs:
       if: inputs.target == 'windows' && inputs.architecture == 'arm64'
       shell: pwsh
       run: '& "$env:MP_BUILD_SCRIPTS/windows.ps1" bootstrap'
-    - name: Validate optional signing configuration
-      if: inputs.target == 'android' || inputs.target == 'ios'
+    - name: Configure release signing
+      if: github.event_name != 'pull_request' && (inputs.target == 'android' || inputs.target == 'ios')
       shell: bash
       env:
-        ANY_ANDROID: ${{ github.event_name != 'pull_request' && (inputs.android-keystore-base64 != '' || inputs.android-keystore-password != '' || inputs.android-key-alias != '' || inputs.android-key-password != '') }}
-        ALL_ANDROID: ${{ github.event_name != 'pull_request' && inputs.android-keystore-base64 != '' && inputs.android-keystore-password != '' && inputs.android-key-alias != '' && inputs.android-key-password != '' }}
-        ANY_IOS: ${{ github.event_name != 'pull_request' && (inputs.ios-certificate-base64 != '' || inputs.ios-certificate-password != '' || inputs.ios-profile-base64 != '' || inputs.ios-export-options-base64 != '') }}
-        ALL_IOS: ${{ github.event_name != 'pull_request' && inputs.ios-certificate-base64 != '' && inputs.ios-certificate-password != '' && inputs.ios-profile-base64 != '' && inputs.ios-export-options-base64 != '' }}
-      run: bash "$MP_BUILD_SCRIPTS/signing.sh" validate
+        ANY_ANDROID: ${{ (inputs.android-keystore-base64 != '' || inputs.android-keystore-password != '' || inputs.android-key-alias != '' || inputs.android-key-password != '') }}
+        ALL_ANDROID: ${{ inputs.android-keystore-base64 != '' && inputs.android-keystore-password != '' && inputs.android-key-alias != '' && inputs.android-key-password != '' }}
+        ANY_IOS: ${{ (inputs.ios-certificate-base64 != '' || inputs.ios-certificate-password != '' || inputs.ios-profile-base64 != '' || inputs.ios-export-options-base64 != '') }}
+        ALL_IOS: ${{ inputs.ios-certificate-base64 != '' && inputs.ios-certificate-password != '' && inputs.ios-profile-base64 != '' && inputs.ios-export-options-base64 != '' }}
+      run: |
+        bash "$MP_BUILD_SCRIPTS/signing.sh" validate
+        printf '%s\n' "ANDROID_SIGNING=$ALL_ANDROID" "IOS_SIGNING=$ALL_IOS" >> "$GITHUB_ENV"
     - uses: apple-actions/import-codesign-certs@77ba2a2a8f5cfc8c405ebf3159f767c323e238f9 # v7.1.0
       if: inputs.target == 'ios' && env.IOS_SIGNING == 'true'
       with:
