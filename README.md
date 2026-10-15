@@ -16,7 +16,7 @@ jobs:
       exclude: '["windows-arm64"]' # Or include: '["android", "web"]'.
 ```
 
-Define push/PR/manual triggers and cancellation in the caller. Keep project test commands in `.github/scripts/test.sh`, accepting `vm`, `js` and `wasm`. See [fnesemu](https://github.com/reki2000/fnesemu/pull/108/files), [picker](https://github.com/reki2000/mp_bigfile_picker/pull/3/files) and [audio](https://github.com/reki2000/mp-audio-stream/pull/41/files).
+Define push/PR/manual triggers and cancellation in the caller. Keep project test commands in `.github/scripts/test.sh`, accepting `vm`, `js` and `wasm`; call `$MP_BUILD_SCRIPTS/test.sh <flutter|dart> <runtime> [paths...]` for shared flags and Flutter VM/browser suite selection. See [fnesemu](https://github.com/reki2000/fnesemu/pull/108/files), [picker](https://github.com/reki2000/mp_bigfile_picker/pull/3/files) and [audio](https://github.com/reki2000/mp-audio-stream/pull/41/files).
 
 - [platforms.json](platforms.json) owns build IDs, runners and test hosts. Empty filters select all; `include` and `exclude` are mutually exclusive JSON arrays. Unknown IDs, duplicates and an empty selection fail.
 - Tests run on every host needed by the selected platforms; universal macOS includes Intel and ARM64. Selecting Web also runs portable tests in Chrome using JavaScript and Wasm on those hosts. Filesystem/tool tests stay on the VM.
