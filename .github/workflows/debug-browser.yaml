@@ -25,8 +25,9 @@ jobs:
         run: |
           node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
           bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
+      - run: |
           "$CHROME_EXECUTABLE" --version
-      - run: flutter pub get
+          flutter pub get
       - name: Bound and trace each Wasm test invocation
         run: |
           set +e
@@ -40,5 +41,6 @@ jobs:
           }
           JS
           debug_status=$?
+          grep -E "^(START|FINISH)|Error|Exception|ERROR|SEVERE|Failed" "$RUNNER_TEMP/browser-debug.log" | tail -n 50 || true
           tail -n 200 "$RUNNER_TEMP/browser-debug.log"
           exit "$debug_status"
