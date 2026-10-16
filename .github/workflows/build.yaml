@@ -12,6 +12,9 @@ on:
       flutter-version:
         type: string
         default: ''
+      web-javascript:
+        type: boolean
+        default: true
       include:
         type: string
         default: '[]'
@@ -84,7 +87,7 @@ jobs:
           BROWSER_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
       - name: Browser tests (JavaScript)
-        if: needs.plan.outputs.web == 'true'
+        if: needs.plan.outputs.web == 'true' && inputs.web-javascript
         run: bash .github/scripts/test.sh js
       - name: Browser tests (WebAssembly)
         if: needs.plan.outputs.web == 'true'
@@ -110,6 +113,7 @@ jobs:
           architecture: ${{ matrix.arch }}
           app-directory: ${{ inputs.app-directory }}
           artifact-name: ${{ inputs.artifact-name }}
+          web-javascript: ${{ inputs.web-javascript }}
           flutter-version: ${{ inputs.flutter-version }}
           android-keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           android-keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
