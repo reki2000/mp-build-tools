@@ -5,7 +5,7 @@ const {join} = require('node:path');
 // https://github.com/flutter/flutter/issues/192069
 // https://github.com/flutter/flutter/pull/189623
 function prepare(source) {
-  return source.replace(/shelf\.Response _localCanvasKitHandler[\s\S]*?\n  }/, handler => handler
+  return source.replace(/shelf\.Response _(?:localCanvasKit|wrapper)Handler[\s\S]*?\n  }/g, handler => handler
     .replace('_fileSystem.path.fromUri(request.url)', 'request.url.path')
     .replace('headers: <String, Object>{HttpHeaders.contentTypeHeader: contentType},',
       "headers: <String, Object>{HttpHeaders.contentTypeHeader: contentType, HttpHeaders.cacheControlHeader: 'public, max-age=3600'},"));

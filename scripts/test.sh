@@ -14,7 +14,7 @@ case "$runtime" in
   js) args=(--platform chrome) ;;
   wasm)
     args=(--platform chrome)
-    if [[ "$tool" == flutter ]]; then args+=(--wasm); else args+=(--compiler dart2wasm); fi
+    if [[ "$tool" == flutter ]]; then args+=(--wasm); else args+=(--compiler dart2wasm --concurrency=1); fi
     ;;
   *) echo 'Expected vm, js or wasm' >&2; exit 1 ;;
 esac

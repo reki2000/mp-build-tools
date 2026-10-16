@@ -19,7 +19,7 @@ jobs:
 Define push/PR/manual triggers and cancellation in the caller. Keep project test commands in `.github/scripts/test.sh`, accepting `vm`, `js` and `wasm`; call `$MP_BUILD_SCRIPTS/test.sh <flutter|dart> <runtime> [paths...]` for shared flags and Flutter VM/browser suite selection. See [fnesemu](https://github.com/reki2000/fnesemu/pull/108/files), [picker](https://github.com/reki2000/mp_bigfile_picker/pull/3/files) and [audio](https://github.com/reki2000/mp-audio-stream/pull/41/files).
 
 - [platforms.json](platforms.json) owns build IDs, runners and test hosts. Empty filters select all; `include` and `exclude` are mutually exclusive JSON arrays. Unknown IDs, duplicates and an empty selection fail.
-- Tests run on every host needed by the selected platforms; universal macOS includes Intel and ARM64. Selecting Web also runs portable tests in Chrome using JavaScript and Wasm on those hosts. Filesystem/tool tests stay on the VM.
+- Tests run on every host needed by the selected platforms; universal macOS includes Intel and ARM64. Selecting Web also runs portable Chrome JS/Wasm tests on those hosts. Set `web-javascript: false` to test and distribute Wasm only; Flutter still compiles its default JS fallback, which is removed before packaging. Filesystem/tool tests stay on the VM.
 - PR/develop builds Web. Main/manual builds every selected platform. Add `ci:full` for native PR builds and remove it after verification.
 - Mobile binaries are compiled; mocked unit/widget tests do not validate device dialogs, audio hardware or provisioning. Verify those internally before tagging.
 - Pages deploys successful push builds: main at `/`, develop at `/develop/`; PR uses a dry run and manual runs do not deploy. Both paths use the same portable Web ZIP. Existing `develop/` and `CNAME` are retained.
@@ -33,7 +33,7 @@ git tag v1.0.0 <verified-commit-sha>
 git push origin v1.0.0
 ```
 
-Call [.github/workflows/release.yaml](.github/workflows/release.yaml) with `tag`, `artifact-name` and optional `build-run-id`, granting `actions: read` and `contents: write`. It checks the source commit, successful main/manual run, recorded platform selection, complete artifacts and digests, then publishes a draft. Binaries are never rebuilt or re-signed. Checksums and build metadata accompany assets; published releases are retained. Expired artifacts require rebuilding and internal verification.
+Call [.github/workflows/release.yaml](.github/workflows/release.yaml) with `tag`, `artifact-name` and optional `build-run-id`, granting `actions: read` and `contents: write`. It checks the source commit, successful main/manual run, recorded platform selection, complete artifacts and digests, then publishes after every upload succeeds. Binaries are never rebuilt or re-signed. Checksums and build metadata accompany assets; published releases are retained. Expired artifacts require rebuilding and internal verification.
 
 ## Signing and installation
 

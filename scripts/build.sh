@@ -10,6 +10,7 @@ args=(--build-name="${BUILD_NAME:-$VERSION}" --build-number="$GITHUB_RUN_NUMBER"
 case "$target" in
   web)
     flutter build web --wasm --release --base-href=/ --no-web-resources-cdn "${args[@]}"
+    if [[ "$WEB_JAVASCRIPT" == false ]]; then node "$MP_BUILD_SCRIPTS/wasm-only.cjs" build/web; fi
     ;;
   android)
     flutter build apk --release --split-per-abi "${args[@]}"

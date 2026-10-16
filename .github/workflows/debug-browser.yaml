@@ -1,16 +1,37 @@
-name: Diagnose nested browser suites
+name: Diagnose browser fixes
 on:
   push:
     branches: ['debug/macos-wasm-20261015']
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
-  windows:
-    runs-on: windows-2022
-    timeout-minutes: 18
-    defaults:
-      run:
-        shell: bash
+  intel:
+    runs-on: macos-15-intel
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: reki2000/mp_bigfile_picker
+          ref: 97b367f3add6bd2f326d7ad5e53c8a3506f12d0f
+          persist-credentials: false
+      - uses: $/setup-flutter
+      - run: |
+          node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
+          bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
+      - name: Wasm suites with software rendering
+        timeout-minutes: 5
+        run: |
+          flutter pub get
+          bash "$MP_BUILD_SCRIPTS/test.sh" flutter wasm test/web_access_test.dart
+          cd example
+          flutter pub get
+          bash "$MP_BUILD_SCRIPTS/test.sh" flutter wasm
+  core:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,27 +40,14 @@ jobs:
           submodules: recursive
           persist-credentials: false
       - uses: $/setup-flutter
-      - name: Prepare the SDK and browser
-        run: |
-          node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
-          bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
-          flutter pub get
-      - name: Existing SDK nested browser suite
-        continue-on-error: true
+      - run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
+      - name: Core factory in isolation
         timeout-minutes: 3
-        run: flutter test --platform chrome test/gui/core_boundary_test.dart --verbose
-      - name: Normalize the nested browser selector URL
+        working-directory: packages/fnesemu_core
         run: |
-          node - <<'JS'
-          const fs = require('node:fs');
-          const path = require('node:path');
-          const file = path.join(process.env.FLUTTER_ROOT, 'packages/flutter_tools/lib/src/test/flutter_web_platform.dart');
-          const source = fs.readFileSync(file, 'utf8');
-          const updated = source.replace(/shelf.Response _wrapperHandler[\s\S]*?\n  }/, handler => handler.replace('_fileSystem.path.fromUri(request.url)', 'request.url.path'));
-          console.log('Patched nested selector:', source !== updated);
-          fs.writeFileSync(file, updated);
-          for (const name of ['flutter_tools.snapshot', 'flutter_tools.stamp']) fs.rmSync(path.join(process.env.FLUTTER_ROOT, 'bin/cache', name), {force: true});
-          JS
-      - name: Fixed SDK nested browser suite
-        timeout-minutes: 4
-        run: flutter test --platform chrome test/gui/core_boundary_test.dart --verbose
+          dart pub get
+          bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded test/core/core_factory_test.dart
+      - name: All core suites without parallel Wasm instances
+        timeout-minutes: 8
+        working-directory: packages/fnesemu_core
+        run: bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded
