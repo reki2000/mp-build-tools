@@ -48,7 +48,7 @@ Map these optional repository secrets explicitly into the build workflow; config
 | iOS | IPA; unsigned files require signing, signed files follow the provisioning profile. |
 | iOS simulator | ARM64 debug app ZIP; install with `xcrun simctl install`. |
 | macOS | Universal app ZIP, ad-hoc signed without notarization. |
-| Windows / Linux | x64/ARM64 ZIP; extract the entire directory and run the executable. |
+| Windows / Linux | x64/ARM64 archives; extract the entire directory and run the executable. |
 | Web | Wasm with JavaScript fallback; serve over HTTP(S), not `file://`. |
 
 Standalone Actions remain available: [flutter-build](flutter-build/action.yml), [setup-flutter](setup-flutter/action.yml), [build-plan](build-plan/action.yml), [read-version](read-version/action.yml), [release-binaries](release-binaries/action.yml), [deploy-pages](deploy-pages/action.yml). Reusable workflows use GitHub.com's `$/` self references so internal Actions follow the same pinned commit.
