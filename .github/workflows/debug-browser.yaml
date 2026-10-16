@@ -1,4 +1,4 @@
-name: Diagnose Wasm disc identification
+name: Verify Wasm disc identification
 on:
   push:
     branches: ['debug/macos-wasm-20261015']
@@ -7,7 +7,7 @@ permissions:
 jobs:
   core:
     runs-on: ubuntu-22.04
-    timeout-minutes: 8
+    timeout-minutes: 7
     defaults:
       run:
         shell: bash
@@ -16,20 +16,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: reki2000/fnesemu
-          ref: 1f3d1b9109c0bf7d6a268baf051fc0244d2d2ef3
+          ref: 4ed54cd8e2836bdf38cc13b6980c6e2b463373a7
           submodules: recursive
           persist-credentials: false
       - uses: $/setup-flutter
       - run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
-      - name: Trace disc identification
-        run: |
-          node - <<'JS'
-          const fs = require('node:fs');
-          const file = 'lib/core_factory.dart';
-          fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('final system = await module.identifyDisc(drive);',
-            "print('Identify ${module.runtimeType}');\n      final system = await module.identifyDisc(drive);\n      print('Identified $system');"));
-          JS
-          dart pub get
-      - name: Wasm disc identification
+      - name: Both PlayStation signatures and remaining factory cases
         timeout-minutes: 2
-        run: bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded --plain-name 'system of a disc' test/core/core_factory_test.dart
+        run: |
+          dart pub get
+          bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded test/core/core_factory_test.dart
