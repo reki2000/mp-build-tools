@@ -1,37 +1,17 @@
-name: Diagnose browser fixes
+name: Diagnose Wasm disc identification
 on:
   push:
     branches: ['debug/macos-wasm-20261015']
 permissions:
   contents: read
-defaults:
-  run:
-    shell: bash
 jobs:
-  intel:
-    runs-on: macos-15-intel
-    timeout-minutes: 12
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: reki2000/mp_bigfile_picker
-          ref: 97b367f3add6bd2f326d7ad5e53c8a3506f12d0f
-          persist-credentials: false
-      - uses: $/setup-flutter
-      - run: |
-          node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
-          bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
-      - name: Wasm suites with software rendering
-        timeout-minutes: 5
-        run: |
-          flutter pub get
-          bash "$MP_BUILD_SCRIPTS/test.sh" flutter wasm test/web_access_test.dart
-          cd example
-          flutter pub get
-          bash "$MP_BUILD_SCRIPTS/test.sh" flutter wasm
   core:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/fnesemu_core
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,13 +21,15 @@ jobs:
           persist-credentials: false
       - uses: $/setup-flutter
       - run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
-      - name: Core factory in isolation
-        timeout-minutes: 3
-        working-directory: packages/fnesemu_core
+      - name: Trace disc identification
         run: |
+          node - <<'JS'
+          const fs = require('node:fs');
+          const file = 'lib/core_factory.dart';
+          fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('final system = await module.identifyDisc(drive);',
+            "print('Identify ${module.runtimeType}');\n      final system = await module.identifyDisc(drive);\n      print('Identified $system');"));
+          JS
           dart pub get
-          bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded test/core/core_factory_test.dart
-      - name: All core suites without parallel Wasm instances
-        timeout-minutes: 8
-        working-directory: packages/fnesemu_core
-        run: bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded
+      - name: Wasm disc identification
+        timeout-minutes: 2
+        run: bash "$MP_BUILD_SCRIPTS/test.sh" dart wasm --reporter expanded --plain-name 'system of a disc' test/core/core_factory_test.dart
