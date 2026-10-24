@@ -12,9 +12,6 @@ on:
       flutter-version:
         type: string
         default: ''
-      web-javascript:
-        type: boolean
-        default: true
       include:
         type: string
         default: '[]'
@@ -44,8 +41,8 @@ jobs:
     outputs:
       builds: ${{ steps.plan.outputs.builds }}
       tests: ${{ steps.plan.outputs.tests }}
-      web: ${{ steps.plan.outputs.web }}
-      web-runner: ${{ steps.plan.outputs.web-runner }}
+      browsers: ${{ steps.plan.outputs.browsers }}
+      wasm: ${{ steps.plan.outputs.wasm }}
       full: ${{ steps.plan.outputs.full }}
       manifest: ${{ steps.plan.outputs.manifest }}
     steps:
@@ -74,12 +71,16 @@ jobs:
       - name: VM unit and widget tests
         run: bash .github/scripts/test.sh vm
 
-  web-tests:
+  browser-tests:
     needs: plan
-    if: needs.plan.outputs.web == 'true'
-    name: Browser tests (Web)
-    runs-on: ${{ needs.plan.outputs.web-runner }}
+    if: needs.plan.outputs.browsers != '[]'
+    name: Browser tests (${{ matrix.id }})
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.browsers) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -99,11 +100,8 @@ jobs:
         env:
           BROWSER_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
-      - name: Browser tests (JavaScript)
-        if: inputs.web-javascript
-        run: bash .github/scripts/test.sh js
-      - name: Browser tests (WebAssembly)
-        run: bash .github/scripts/test.sh wasm
+      - name: Browser tests
+        run: bash .github/scripts/test.sh ${{ matrix.runtime }}
 
   build:
     needs: plan
@@ -125,7 +123,6 @@ jobs:
           architecture: ${{ matrix.arch }}
           app-directory: ${{ inputs.app-directory }}
           artifact-name: ${{ inputs.artifact-name }}
-          web-javascript: ${{ inputs.web-javascript }}
           flutter-version: ${{ inputs.flutter-version }}
           android-keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           android-keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -137,15 +134,15 @@ jobs:
           ios-export-options-base64: ${{ secrets.IOS_EXPORT_OPTIONS_BASE64 }}
 
   complete:
-    needs: [plan, tests, web-tests, build]
-    # web-tests is skipped when Web is not selected, which must not skip this job.
+    needs: [plan, tests, browser-tests, build]
+    # browser-tests is skipped when no Web platform is selected, which must not skip this job.
     if: >-
       always() &&
       needs.plan.outputs.full == 'true' &&
       (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
       needs.tests.result == 'success' &&
       needs.build.result == 'success' &&
-      (needs.web-tests.result == 'success' || needs.web-tests.result == 'skipped')
+      (needs.browser-tests.result == 'success' || needs.browser-tests.result == 'skipped')
     runs-on: ubuntu-22.04
     steps:
       - name: Record the verified platform selection
@@ -159,9 +156,9 @@ jobs:
           retention-days: 90
 
   pages:
-    needs: [plan, tests, web-tests, build]
+    needs: [plan, tests, browser-tests, build]
     if: >-
-      needs.plan.outputs.web == 'true' &&
+      needs.plan.outputs.wasm == 'true' &&
       (github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-22.04
     timeout-minutes: 10

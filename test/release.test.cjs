@@ -11,7 +11,7 @@ test('only promote a complete successful full build of the tagged commit', async
   const saved = Object.fromEntries(keys.map(k => [k, process.env[k]]));
   const directory = mkdtempSync(join(tmpdir(), 'mp-build-release-'));
   const names = ['android-all', 'linux-x64', 'linux-arm64', 'windows-x64', 'windows-arm64',
-    'macos-universal', 'ios-arm64', 'ios-simulator-arm64', 'web-browser'];
+    'macos-universal', 'ios-arm64', 'ios-simulator-arm64', 'web-javascript', 'web-wasm'];
   process.chdir(directory);
   process.env.COMMIT = 'verified-commit';
   process.env.RELEASE_TAG = 'v1.2.3';
@@ -58,7 +58,7 @@ test('only promote a complete successful full build of the tagged commit', async
     await check(d => d.run.event = 'workflow_dispatch', true);
     await check(d => d.manifest = null, true);
     await check(d => {
-      d.manifest = require('../scripts/plan.cjs').plan({include: '["android","web"]', full: true, commit: 'verified-commit'}).manifest;
+      d.manifest = require('../scripts/plan.cjs').plan({include: '["android","web-wasm"]', full: true, commit: 'verified-commit'}).manifest;
       d.artifacts = d.artifacts.filter(a => d.manifest.artifacts.includes(a.name));
     }, true);
     for (const change of [

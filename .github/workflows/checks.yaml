@@ -68,14 +68,14 @@ jobs:
           ARTIFACT_NAME: sample
           FLUTTER_VERSION: fixture-sdk
           TARGET: web
-          ARCH: ''
+          ARCH: wasm
           ANDROID_SIGNING: 'true'
           IOS_SIGNING: 'true'
         run: bash scripts/configure-build.sh
       - name: Check configured Web version and script path
         shell: bash
         run: |
-          test "$VERSION" = "1.2.3-rc.1" && test "$BUILD_NAME" = "1.2.3-rc.1" && test "$ARCH" = browser
+          test "$VERSION" = "1.2.3-rc.1" && test "$BUILD_NAME" = "1.2.3-rc.1" && test "$ARCH" = wasm
           test -f "$MP_BUILD_SCRIPTS/build.sh"
           test "$ANDROID_SIGNING" = false && test "$IOS_SIGNING" = false
       - name: Check the preinstalled Chrome path

@@ -5,7 +5,7 @@ inputs:
     description: "Flutter target: web, android, linux, windows, macos, ios or ios-simulator."
     required: true
   architecture:
-    description: "Native architecture: all, x64, arm64 or universal. Web uses browser."
+    description: "Architecture: all, x64, arm64 or universal for native targets; javascript or wasm for Web."
     default: ""
   app-directory:
     description: "Application directory relative to the checked-out repository."
@@ -16,9 +16,6 @@ inputs:
   flutter-version:
     description: "Pinned Flutter SDK version."
     default: ""
-  web-javascript:
-    description: "Keep the JavaScript fallback in Web distributions."
-    default: "true"
   retention-days:
     description: "Days to retain the uploaded CI artifact."
     default: "90"
@@ -69,7 +66,6 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         TARGET: ${{ inputs.target }}
         ARCH: ${{ inputs.architecture }}
-        WEB_JAVASCRIPT: ${{ inputs.web-javascript }}
         APP_DIR: ${{ inputs.app-directory }}
         ARTIFACT_NAME: ${{ inputs.artifact-name }}
       run: bash "${ACTION_PATH//\\//}/../scripts/configure-build.sh"

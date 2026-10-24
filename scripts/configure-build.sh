@@ -15,15 +15,17 @@ if [[ "$RUNNER_OS" == Windows ]]; then
   scripts=$(cygpath -m "$scripts")
 fi
 build_name=${version%%-*}
+: "${ARCH:?architecture is required}"
 if [[ "$TARGET" == web ]]; then
-  ARCH=browser
+  case "$ARCH" in
+    javascript|wasm) ;;
+    *) echo "Unsupported Web architecture: $ARCH" >&2; exit 1 ;;
+  esac
   build_name=$version
-else
-  : "${ARCH:?architecture is required for native builds}"
 fi
 
 printf '%s\n' \
   "APP_DIR=$APP_DIR" "ARTIFACT_NAME=$ARTIFACT_NAME" "FLUTTER_VERSION=$FLUTTER_VERSION" \
-  "WEB_JAVASCRIPT=${WEB_JAVASCRIPT:-true}" "VERSION=$version" "BUILD_NAME=$build_name" "TARGET=$TARGET" "ARCH=$ARCH" \
+  "VERSION=$version" "BUILD_NAME=$build_name" "TARGET=$TARGET" "ARCH=$ARCH" \
   "ANDROID_SIGNING=false" "IOS_SIGNING=false" \
   "MP_BUILD_SCRIPTS=$scripts" >> "$GITHUB_ENV"
