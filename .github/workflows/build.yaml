@@ -45,6 +45,7 @@ jobs:
       builds: ${{ steps.plan.outputs.builds }}
       tests: ${{ steps.plan.outputs.tests }}
       web: ${{ steps.plan.outputs.web }}
+      web-runner: ${{ steps.plan.outputs.web-runner }}
       full: ${{ steps.plan.outputs.full }}
       manifest: ${{ steps.plan.outputs.manifest }}
     steps:
@@ -70,27 +71,38 @@ jobs:
       - uses: $/setup-flutter
         with:
           flutter-version: ${{ inputs.flutter-version }}
-      - name: Apply Flutter browser-test SDK fixes
-        if: needs.plan.outputs.web == 'true'
-        run: node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
       - name: VM unit and widget tests
         run: bash .github/scripts/test.sh vm
+
+  web-tests:
+    needs: plan
+    if: needs.plan.outputs.web == 'true'
+    name: Browser tests (Web)
+    runs-on: ${{ needs.plan.outputs.web-runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: $/setup-flutter
+        with:
+          flutter-version: ${{ inputs.flutter-version }}
+      - name: Apply Flutter browser-test SDK fixes
+        run: node "$MP_BUILD_SCRIPTS/prepare-web-tests.cjs"
       - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
         id: chrome
-        if: needs.plan.outputs.web == 'true' && runner.os == 'Linux' && runner.arch == 'ARM64'
+        if: runner.os == 'Linux' && runner.arch == 'ARM64'
         with:
           chrome-version: stable
           install-dependencies: true
       - name: Configure Chrome for the test host
-        if: needs.plan.outputs.web == 'true'
         env:
           BROWSER_PATH: ${{ steps.chrome.outputs.chrome-path }}
         run: bash "$MP_BUILD_SCRIPTS/setup-browser.sh"
       - name: Browser tests (JavaScript)
-        if: needs.plan.outputs.web == 'true' && inputs.web-javascript
+        if: inputs.web-javascript
         run: bash .github/scripts/test.sh js
       - name: Browser tests (WebAssembly)
-        if: needs.plan.outputs.web == 'true'
         run: bash .github/scripts/test.sh wasm
 
   build:
@@ -125,8 +137,15 @@ jobs:
           ios-export-options-base64: ${{ secrets.IOS_EXPORT_OPTIONS_BASE64 }}
 
   complete:
-    needs: [plan, tests, build]
-    if: needs.plan.outputs.full == 'true' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    needs: [plan, tests, web-tests, build]
+    # web-tests is skipped when Web is not selected, which must not skip this job.
+    if: >-
+      always() &&
+      needs.plan.outputs.full == 'true' &&
+      (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') &&
+      needs.tests.result == 'success' &&
+      needs.build.result == 'success' &&
+      (needs.web-tests.result == 'success' || needs.web-tests.result == 'skipped')
     runs-on: ubuntu-22.04
     steps:
       - name: Record the verified platform selection
@@ -140,7 +159,7 @@ jobs:
           retention-days: 90
 
   pages:
-    needs: [plan, tests, build]
+    needs: [plan, tests, web-tests, build]
     if: >-
       needs.plan.outputs.web == 'true' &&
       (github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')))

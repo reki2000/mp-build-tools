@@ -17,6 +17,9 @@ outputs:
   web:
     description: Whether Web was selected.
     value: ${{ steps.plan.outputs.web }}
+  web-runner:
+    description: Runner for the independent Web browser tests; empty when Web was not selected.
+    value: ${{ steps.plan.outputs.web-runner }}
   full:
     description: Whether this event builds every selected platform.
     value: ${{ steps.plan.outputs.full }}

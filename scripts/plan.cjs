@@ -19,13 +19,19 @@ const artifactNames = platforms => platforms.map(p => `release-${p.target}-${p.a
 
 function plan({include, exclude, full, commit}) {
   const selected = select(include, exclude);
-  const tests = [...new Set(selected.flatMap(p => p['test-hosts'] || [p.host]))]
+  // Web is independent of native platforms: its browser tests run in their own job and add no
+  // native test hosts. A Web-only selection still runs the VM suites on the Web build host.
+  const web = selected.find(p => p.target === 'web');
+  const native = selected.filter(p => p.target !== 'web');
+  const tests = [...new Set((native.length ? native : selected).flatMap(p => p['test-hosts'] || [p.host]))]
     .map(id => ({id, runner: hosts[id]}));
+  const testedHosts = [...new Set([...tests.map(t => t.id), ...(web ? [web.host] : [])])];
   return {
     builds: selected.filter(p => full || p.target === 'web'),
     tests,
-    web: selected.some(p => p.target === 'web'),
-    manifest: {schema: 1, commit, platforms: selected.map(p => p.id), artifacts: artifactNames(selected), tests: tests.map(t => t.id)},
+    web: Boolean(web),
+    'web-runner': web ? hosts[web.host] : '',
+    manifest: {schema: 1, commit, platforms: selected.map(p => p.id), artifacts: artifactNames(selected), tests: testedHosts},
   };
 }
 
