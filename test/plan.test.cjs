@@ -20,7 +20,7 @@ test('include and exclude select builds, tests, browser coverage and release exp
   const result = plan({include: '["macos","web-wasm"]', full: true});
   assert.deepEqual(result.builds.map(b => b.id), ['macos', 'web-wasm']);
   assert.deepEqual(result.tests.map(t => t.id), ['macos-arm64', 'macos-x64']);
-  assert.deepEqual(result.browsers, [{id: 'web-wasm', runner: 'ubuntu-22.04', runtime: 'wasm'}]);
+  assert.deepEqual(result.browsers, [{id: 'web-wasm', runner: 'ubuntu-22.04', runtime: 'wasm', artifact: 'release-web-wasm'}]);
   assert.deepEqual(result.manifest.tests, ['macos-arm64', 'macos-x64', 'linux-x64']);
   assert.deepEqual(result.manifest.artifacts, ['release-macos-universal', 'release-web-wasm']);
   const reduced = plan({exclude: '["windows-arm64","web-js","web-wasm"]', full: true});
@@ -32,7 +32,7 @@ test('include and exclude select builds, tests, browser coverage and release exp
 test('Web platforms are independent: they add no native test hosts and run on the Web host', () => {
   const js = plan({include: '["web-js"]', full: false});
   assert.deepEqual(js.tests.map(t => t.id), ['linux-x64']);
-  assert.deepEqual(js.browsers, [{id: 'web-js', runner: 'ubuntu-22.04', runtime: 'js'}]);
+  assert.deepEqual(js.browsers, [{id: 'web-js', runner: 'ubuntu-22.04', runtime: 'js', artifact: 'release-web-javascript'}]);
   assert.equal(js.wasm, false);
   const android = plan({include: '["android"]', full: false});
   assert.deepEqual(android.browsers, []);

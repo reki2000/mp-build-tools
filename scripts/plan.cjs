@@ -29,7 +29,7 @@ function plan({include, exclude, full, commit}) {
   return {
     builds: selected.filter(p => full || p.target === 'web'),
     tests,
-    browsers: browsers.map(p => ({id: p.id, runner: hosts[p.host], runtime: p['test-runtime']})),
+    browsers: browsers.map(p => ({id: p.id, runner: hosts[p.host], runtime: p['test-runtime'], artifact: artifactNames([p])[0]})),
     wasm: browsers.some(p => p.arch === 'wasm'),
     manifest: {schema: 1, commit, platforms: selected.map(p => p.id), artifacts: artifactNames(selected), tests: testedHosts},
   };
