@@ -14,9 +14,12 @@ outputs:
   tests:
     description: Distinct host environments for the selected platforms.
     value: ${{ steps.plan.outputs.tests }}
-  web:
-    description: Whether Web was selected.
-    value: ${{ steps.plan.outputs.web }}
+  browsers:
+    description: Browser test entries for the selected Web platforms.
+    value: ${{ steps.plan.outputs.browsers }}
+  wasm:
+    description: Whether web-wasm was selected; its build is the Pages distribution.
+    value: ${{ steps.plan.outputs.wasm }}
   full:
     description: Whether this event builds every selected platform.
     value: ${{ steps.plan.outputs.full }}

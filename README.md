@@ -13,16 +13,16 @@ jobs:
     with:
       artifact-name: my-app
       app-directory: example # Omit for a root application.
-      exclude: '["windows-arm64"]' # Or include: '["android", "web"]'.
+      exclude: '["windows-arm64"]' # Or include: '["android", "web-wasm"]'.
 ```
 
 Define push/PR/manual triggers and cancellation in the caller. Keep project test commands in `.github/scripts/test.sh`, accepting `vm`, `js` and `wasm`; call `$MP_BUILD_SCRIPTS/test.sh <flutter|dart> <runtime> [paths...]` for shared flags and Flutter VM/browser suite selection. See [fnesemu](https://github.com/reki2000/fnesemu/pull/108/files), [picker](https://github.com/reki2000/mp_bigfile_picker/pull/3/files) and [audio](https://github.com/reki2000/mp-audio-stream/pull/41/files).
 
 - [platforms.json](platforms.json) owns build IDs, runners and test hosts. Empty filters select all; `include` and `exclude` are mutually exclusive JSON arrays. Unknown IDs, duplicates and an empty selection fail.
-- Tests run on every host needed by the selected platforms; universal macOS includes Intel and ARM64. Selecting Web also runs portable Chrome JS/Wasm tests on those hosts. Set `web-javascript: false` to test and distribute Wasm only; Flutter still compiles its default JS fallback, which is removed before packaging. Filesystem/tool tests stay on the VM.
+- VM tests run on every host needed by the selected native platforms; universal macOS includes Intel and ARM64. `web-js` (dart2js) and `web-wasm` (dart2wasm, no JavaScript fallback) are independent platforms: each builds and runs its Chrome tests in `browser-tests` on the Web build host and adds no native hosts. A Web-only selection runs VM tests on that host. Filesystem/tool tests stay on the VM.
 - PR/develop builds Web. Main/manual builds every selected platform. Add `ci:full` for native PR builds and remove it after verification.
 - Mobile binaries are compiled; mocked unit/widget tests do not validate device dialogs, audio hardware or provisioning. Verify those internally before tagging.
-- Pages deploys successful push builds: main at `/`, develop at `/develop/`; PR uses a dry run and manual runs do not deploy. Both paths use the same portable Web ZIP. Existing `develop/` and `CNAME` are retained.
+- Pages deploys the successful `web-wasm` push build: main at `/`, develop at `/develop/`; PR uses a dry run and manual runs do not deploy. Existing `develop/` and `CNAME` are retained.
 
 ## Release
 
@@ -49,6 +49,7 @@ Map these optional repository secrets explicitly into the build workflow; config
 | iOS simulator | ARM64 debug app ZIP; install with `xcrun simctl install`. |
 | macOS | Universal app ZIP, ad-hoc signed without notarization. |
 | Windows / Linux | x64/ARM64 archives; extract the entire directory and run the executable. |
-| Web | Wasm with JavaScript fallback; serve over HTTP(S), not `file://`. |
+| Web (`web-wasm`) | Wasm only, no JavaScript fallback; serve over HTTP(S), not `file://`. |
+| Web (`web-js`) | dart2js build; serve over HTTP(S), not `file://`. |
 
 Standalone Actions remain available: [flutter-build](flutter-build/action.yml), [setup-flutter](setup-flutter/action.yml), [build-plan](build-plan/action.yml), [read-version](read-version/action.yml), [release-binaries](release-binaries/action.yml), [deploy-pages](deploy-pages/action.yml). Reusable workflows use GitHub.com's `$/` self references so internal Actions follow the same pinned commit.

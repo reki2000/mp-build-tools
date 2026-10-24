@@ -16,6 +16,7 @@
     "macos": {"target": "macos", "arch": "universal", "host": "macos-arm64", "test-hosts": ["macos-arm64", "macos-x64"]},
     "ios": {"target": "ios", "arch": "arm64", "host": "macos-arm64"},
     "ios-simulator": {"target": "ios-simulator", "arch": "arm64", "host": "macos-arm64"},
-    "web": {"target": "web", "arch": "browser", "host": "linux-x64"}
+    "web-js": {"target": "web", "arch": "javascript", "host": "linux-x64", "test-runtime": "js"},
+    "web-wasm": {"target": "web", "arch": "wasm", "host": "linux-x64", "test-runtime": "wasm"}
   }
 }
