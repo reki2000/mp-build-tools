@@ -10,7 +10,11 @@ args=(--build-name="${BUILD_NAME:-$VERSION}" --build-number="$GITHUB_RUN_NUMBER"
 case "$target" in
   web)
     if [[ "$ARCH" == wasm ]]; then
-      flutter build web --wasm --release --base-href=/ --no-web-resources-cdn "${args[@]}"
+      # The Wasm build ships no JavaScript fallback; patch the SDK so its
+      # compile cannot fail the build, and skip icon tree shaking, which
+      # needs the JavaScript build's kernel file.
+      node "$MP_BUILD_SCRIPTS/flutter-wasm-only.cjs"
+      flutter build web --wasm --release --base-href=/ --no-web-resources-cdn --no-tree-shake-icons "${args[@]}"
       node "$MP_BUILD_SCRIPTS/wasm-only.cjs" build/web
     else
       flutter build web --release --base-href=/ --no-web-resources-cdn "${args[@]}"
