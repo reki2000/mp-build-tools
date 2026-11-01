@@ -175,8 +175,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+    # PR dry-runs must not contend with other PRs. Serialize actual
+    # deployments, which may write to the same Pages branch.
     concurrency:
-      group: pages-${{ github.repository }}
+      group: pages-${{ github.repository }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'deploy' }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
