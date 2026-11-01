@@ -45,21 +45,27 @@ test('ordinary PR/develop builds every selected Web platform; the release plan s
   assert.equal(plan({full: false}).manifest.platforms.length, 10);
 });
 
-test('release-only platforms build and test only in full plans', () => {
-  const ordinary = plan({full: false});
+test('consumer-listed release-only platforms build and test only in full plans', () => {
+  const releaseOnly = '["windows-arm64","linux-arm64"]';
+  assert.deepEqual(plan({full: false}).tests.map(t => t.id),
+      ['linux-x64', 'linux-arm64', 'windows-x64', 'windows-arm64', 'macos-arm64']);
+  const ordinary = plan({full: false, releaseOnly});
   assert.deepEqual(ordinary.tests.map(t => t.id), ['linux-x64', 'windows-x64', 'macos-arm64']);
   assert(!ordinary.manifest.tests.includes('windows-arm64'));
   assert(!ordinary.manifest.tests.includes('linux-arm64'));
   assert(ordinary.manifest.artifacts.includes('release-windows-arm64'));
   assert(ordinary.manifest.artifacts.includes('release-linux-arm64'));
-  const full = plan({full: true});
+  const full = plan({full: true, releaseOnly});
   assert(full.builds.some(b => b.id === 'windows-arm64'));
   assert(full.tests.some(t => t.id === 'windows-arm64'));
   assert(full.builds.some(b => b.id === 'linux-arm64'));
   assert(full.tests.some(t => t.id === 'linux-arm64'));
-  const only = plan({include: '["windows-arm64"]', full: false});
+  const only = plan({include: '["windows-arm64"]', releaseOnly: '["windows-arm64"]', full: false});
   assert.deepEqual(only.builds, []);
   assert.deepEqual(only.tests.map(t => t.id), ['windows-arm64']);
+  for (const bad of ['["unknown"]', '["windows-arm64","windows-arm64"]', '"windows-arm64"', 'not-json']) {
+    assert.throws(() => plan({full: false, releaseOnly: bad}));
+  }
 });
 
 test('invalid filters fail before scheduling runners', () => {

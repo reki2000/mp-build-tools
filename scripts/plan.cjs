@@ -17,14 +17,19 @@ function select(include = '[]', exclude = '[]') {
 
 const artifactNames = platforms => platforms.map(p => `release-${p.target}-${p.arch}`);
 
-function plan({include, exclude, full, commit}) {
+function plan({include, exclude, releaseOnly = '[]', full, commit}) {
   const selected = select(include, exclude);
+  const release = JSON.parse(releaseOnly);
+  if (!Array.isArray(release) || new Set(release).size !== release.length ||
+      release.some(id => typeof id !== 'string' || !Object.hasOwn(builds, id))) {
+    throw new Error('release-only must be a JSON array of unique platform IDs from platforms.json');
+  }
   // Web platforms are independent of native platforms: their browser tests run in their own jobs
   // and add no native test hosts. A Web-only selection still runs the VM suites on the Web host.
   const browsers = selected.filter(p => p.target === 'web');
   const native = selected.filter(p => p.target !== 'web');
-  // Release-only platforms join full plans only: an ordinary PR/develop plan skips their test hosts as well as their builds, which the filter below already limits to Web.
-  const tested = native.filter(p => full || !p['release-only']);
+  // Platforms the consumer lists as release-only join full plans only: an ordinary PR/develop plan skips their test hosts as well as their builds, which the filter below already limits to Web.
+  const tested = native.filter(p => full || !release.includes(p.id));
   const tests = [...new Set((tested.length ? tested : native.length ? native : selected).flatMap(p => p['test-hosts'] || [p.host]))]
     .map(id => ({id, runner: hosts[id]}));
   const testedHosts = [...new Set([...tests.map(t => t.id), ...browsers.map(p => p.host)])];

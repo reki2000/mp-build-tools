@@ -7,6 +7,9 @@ inputs:
   exclude:
     description: JSON array of platform IDs to omit; mutually exclusive with include.
     default: '[]'
+  release-only:
+    description: JSON array of platform IDs that build and test only in full plans.
+    default: '[]'
 outputs:
   builds:
     description: Build matrix entries for this event.
@@ -35,11 +38,12 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         INCLUDE: ${{ inputs.include }}
         EXCLUDE: ${{ inputs.exclude }}
+        RELEASE_ONLY: ${{ inputs.release-only }}
       with:
         script: |
           const full = context.ref === 'refs/heads/main' || context.eventName === 'workflow_dispatch' ||
             (context.payload.pull_request?.labels || []).some(label => label.name === 'ci:full');
           const result = require(`${process.env.ACTION_PATH}/../scripts/plan.cjs`).plan({
-            include: process.env.INCLUDE, exclude: process.env.EXCLUDE, full, commit: context.sha,
+            include: process.env.INCLUDE, exclude: process.env.EXCLUDE, releaseOnly: process.env.RELEASE_ONLY, full, commit: context.sha,
           });
           for (const [key, value] of Object.entries({...result, full})) core.setOutput(key, value);
