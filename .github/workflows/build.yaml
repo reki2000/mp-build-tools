@@ -17,10 +17,10 @@ on:
         default: '[]'
       exclude:
         type: string
-          default: '[]'
-        release-only:
+        default: '[]'
+      release-only:
         type: string
-    default: '[]'
+        default: '[]'
     secrets:
       ANDROID_KEYSTORE_BASE64: {required: false}
       ANDROID_KEYSTORE_PASSWORD: {required: false}
