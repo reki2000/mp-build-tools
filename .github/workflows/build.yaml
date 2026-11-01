@@ -18,6 +18,9 @@ on:
       exclude:
         type: string
         default: '[]'
+    release-only:
+    type: string
+    default: '[]'
     secrets:
       ANDROID_KEYSTORE_BASE64: {required: false}
       ANDROID_KEYSTORE_PASSWORD: {required: false}
@@ -51,6 +54,7 @@ jobs:
         with:
           include: ${{ inputs.include }}
           exclude: ${{ inputs.exclude }}
+          release-only: ${{ inputs.release-only }}
 
   tests:
     needs: plan
