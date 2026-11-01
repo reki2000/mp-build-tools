@@ -17,9 +17,9 @@ on:
         default: '[]'
       exclude:
         type: string
-        default: '[]'
-    release-only:
-    type: string
+          default: '[]'
+        release-only:
+        type: string
     default: '[]'
     secrets:
       ANDROID_KEYSTORE_BASE64: {required: false}
