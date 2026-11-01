@@ -2,15 +2,15 @@ const assert = require('node:assert/strict');
 const {test} = require('node:test');
 const {select, plan} = require('../scripts/plan.cjs');
 
-test('default catalog covers every distribution target and six native test hosts', () => {
+test('default catalog covers every distribution target and five native test hosts', () => {
   const result = plan({full: true, commit: 'commit'});
   assert.deepEqual(result.manifest.artifacts, [
     'release-android-all', 'release-linux-x64', 'release-linux-arm64',
     'release-windows-x64', 'release-windows-arm64', 'release-macos-universal',
     'release-ios-arm64', 'release-ios-simulator-arm64', 'release-web-javascript', 'release-web-wasm',
   ]);
-  assert.equal(result.tests.length, 6);
-  assert.equal(new Set(result.tests.map(t => t.runner)).size, 6);
+  assert.equal(result.tests.length, 5);
+  assert.equal(new Set(result.tests.map(t => t.runner)).size, 5);
   assert.deepEqual(result.browsers.map(b => b.id), ['web-js', 'web-wasm']);
   assert.equal(result.wasm, true);
   assert.equal(result.manifest.commit, 'commit');
@@ -19,9 +19,9 @@ test('default catalog covers every distribution target and six native test hosts
 test('include and exclude select builds, tests, browser coverage and release expectations together', () => {
   const result = plan({include: '["macos","web-wasm"]', full: true});
   assert.deepEqual(result.builds.map(b => b.id), ['macos', 'web-wasm']);
-  assert.deepEqual(result.tests.map(t => t.id), ['macos-arm64', 'macos-x64']);
+  assert.deepEqual(result.tests.map(t => t.id), ['macos-arm64']);
   assert.deepEqual(result.browsers, [{id: 'web-wasm', runner: 'ubuntu-22.04', runtime: 'wasm', artifact: 'release-web-wasm'}]);
-  assert.deepEqual(result.manifest.tests, ['macos-arm64', 'macos-x64', 'linux-x64']);
+  assert.deepEqual(result.manifest.tests, ['macos-arm64', 'linux-x64']);
   assert.deepEqual(result.manifest.artifacts, ['release-macos-universal', 'release-web-wasm']);
   const reduced = plan({exclude: '["windows-arm64","web-js","web-wasm"]', full: true});
   assert.equal(reduced.builds.length, 7);
