@@ -23,7 +23,9 @@ function plan({include, exclude, full, commit}) {
   // and add no native test hosts. A Web-only selection still runs the VM suites on the Web host.
   const browsers = selected.filter(p => p.target === 'web');
   const native = selected.filter(p => p.target !== 'web');
-  const tests = [...new Set((native.length ? native : selected).flatMap(p => p['test-hosts'] || [p.host]))]
+  // Release-only platforms join full plans only: an ordinary PR/develop plan skips their test hosts as well as their builds, which the filter below already limits to Web.
+  const tested = native.filter(p => full || !p['release-only']);
+  const tests = [...new Set((tested.length ? tested : native.length ? native : selected).flatMap(p => p['test-hosts'] || [p.host]))]
     .map(id => ({id, runner: hosts[id]}));
   const testedHosts = [...new Set([...tests.map(t => t.id), ...browsers.map(p => p.host)])];
   return {

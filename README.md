@@ -20,7 +20,7 @@ Define push/PR/manual triggers and cancellation in the caller. Keep project test
 
 - [platforms.json](platforms.json) owns build IDs, runners and test hosts. Empty filters select all; `include` and `exclude` are mutually exclusive JSON arrays. Unknown IDs, duplicates and an empty selection fail.
 - VM tests run on every host needed by the selected native platforms; the universal macOS build is tested on ARM64 only. `web-js` (dart2js) and `web-wasm` (dart2wasm, no JavaScript fallback) are independent platforms: each builds, then smoke-tests its built archive and runs its Chrome tests in `browser-tests` on the Web build host. Native hosts are not added. A Web-only selection runs VM tests on that host. Filesystem/tool tests stay on the VM.
-- PR/develop builds Web. Main/manual builds every selected platform. Add `ci:full` for native PR builds and remove it after verification.
+- PR/develop builds Web. Main/manual builds every selected platform. Add `ci:full` for native PR builds and remove it after verification. The Windows and Linux ARM64 platforms are release-only: they build and test only on those full runs, while the Android build always ships its ARM APKs (arm64-v8a and armeabi-v7a) from `--split-per-abi`.
 - Mobile binaries are compiled; mocked unit/widget tests do not validate device dialogs, audio hardware or provisioning. Verify those internally before tagging.
 - Pages deploys the successful `web-wasm` push build: main at `/`, develop at `/develop/`; PR uses a dry run and manual runs do not deploy. Existing `develop/` and `CNAME` are retained.
 
