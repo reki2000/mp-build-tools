@@ -5,7 +5,9 @@ set -euo pipefail
 target=$1
 cd "$APP_DIR"
 flutter pub get
-args=(--build-name="${BUILD_NAME:-$VERSION}" --build-number="$GITHUB_RUN_NUMBER" --dart-define=APP_VERSION="$VERSION")
+# GIT_COMMIT and BUILD_TIME let the app tell which build it is.
+args=(--build-name="${BUILD_NAME:-$VERSION}" --build-number="$GITHUB_RUN_NUMBER" --dart-define=APP_VERSION="$VERSION"
+  --dart-define=GIT_COMMIT="${GITHUB_SHA:-}" --dart-define=BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)")
 
 case "$target" in
   web)
