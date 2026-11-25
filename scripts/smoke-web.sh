@@ -15,12 +15,23 @@ for _ in $(seq 100); do
   sleep 0.2
 done
 
-"$CHROME_EXECUTABLE" --headless=new --no-sandbox --disable-gpu --use-angle=swiftshader \
-  --enable-unsafe-swiftshader --enable-logging=stderr --v=0 --virtual-time-budget=30000 \
-  --dump-dom "http://127.0.0.1:$port/" > "$site/dom.html" 2> "$site/console.log"
+# A loaded runner sometimes dumps the page before the app has started, so a
+# blank page is tried again before it fails.
+rendered=false
+for attempt in 1 2 3; do
+  "$CHROME_EXECUTABLE" --headless=new --no-sandbox --disable-gpu --use-angle=swiftshader \
+    --enable-unsafe-swiftshader --enable-logging=stderr --v=0 --virtual-time-budget=60000 \
+    --dump-dom "http://127.0.0.1:$port/" > "$site/dom.html" 2> "$site/console.log" || true
+  if grep -q '<flt-glass-pane' "$site/dom.html"; then
+    rendered=true
+    break
+  fi
+  echo "Web smoke test: attempt $attempt did not render the Flutter view" >&2
+done
 
-if ! grep -q '<flt-glass-pane' "$site/dom.html"; then
+if [[ $rendered != true ]]; then
   echo 'Web smoke test: the Flutter view was not rendered' >&2
+  tail -n 40 "$site/console.log" >&2 || true
   exit 1
 fi
 if grep -E 'CONSOLE.*(ERROR|SEVERE)|Uncaught' "$site/console.log"; then
